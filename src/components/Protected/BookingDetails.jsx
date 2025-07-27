@@ -10,6 +10,7 @@ const BookingDetails = () => {
   const location = useLocation()
 
   const BASE_URL = import.meta.env.VITE_SERVEROTP;
+ 
 
   const isOnBookingForm = location.pathname.includes('/BookingForm')
 
