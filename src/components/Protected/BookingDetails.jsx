@@ -25,7 +25,7 @@ const BookingDetails = () => {
   const handleVerify = async (e) => {
     e.preventDefault()
     try {
-      const res = await axios.post(`http://localhost:8080/api/v1/verify/verifyOtp`, { otp }, { withCredentials: true })
+      const res = await axios.post(`http://royanheritage.onrender.com/api/v1/verify/verifyOtp`, { otp }, { withCredentials: true })
 
       if (res.status === 201) {
         toast.success("OTP verified")
