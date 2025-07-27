@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
 import { Train, User, MapPin, Calendar, Clock, Plus, Minus, ArrowRight, ArrowLeft } from 'lucide-react';
 import axios from 'axios';
+import { useNavigate } from 'react-router-dom';
 
 function BookingForm() {
   const [step, setStep] = useState(1);
   const [ticketCount, setTicketCount] = useState(1);
+  const navigate = useNavigate();
   const [mainPassenger, setMainPassenger] = useState({
     name: '',
     age: '',
@@ -16,6 +18,7 @@ function BookingForm() {
   });
   const [coPassengers, setCoPassengers] = useState([]);
   const [tickets, setTickets] = useState([]);
+  const [paymentData, setPaymentData] = useState(null); // Added missing state
 
   const handleMainPassengerChange = (field, value) => {
     setMainPassenger(prev => ({ ...prev, [field]: value }));
@@ -50,52 +53,274 @@ function BookingForm() {
     }
   };
 
+  const loadRazorpayScript = () => {
+    return new Promise((resolve) => {
+      const script = document.createElement('script');
+      script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+
+      script.onload = () => {
+        resolve(true);
+      };
+
+      script.onerror = () => {
+        resolve(false);
+      };
+
+      document.body.appendChild(script);
+    });
+  };
+
+  const loadJsPDF = () => {
+    return new Promise((resolve) => {
+      const script = document.createElement('script');
+      script.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
+
+      script.onload = () => {
+        resolve(true);
+      };
+
+      script.onerror = () => {
+        resolve(false);
+      };
+
+      document.body.appendChild(script);
+    });
+  };
+
+const downloadTicket = async () => {
+  try {
+    const scriptLoaded = await loadJsPDF();
+
+    if (!scriptLoaded) {
+      alert('Failed to load PDF generator. Please try again.');
+      return;
+    }
+
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+
+    // === HEADER ===
+    doc.setFontSize(20);
+    doc.setTextColor(37, 99, 235); // blue
+    doc.text('Heritage Walk Express', 20, 20);
+
+    doc.setFontSize(12);
+    doc.setTextColor(0, 0, 0);
+    doc.text('Train Booking Confirmation', 20, 28);
+
+    // === BOOKING DETAILS ===
+    doc.setDrawColor(200, 200, 200);
+    doc.line(20, 32, 190, 32);
+
+    doc.setFontSize(14);
+    doc.setTextColor(0, 128, 0);
+    doc.text(' Booking Details:', 20, 40);
+
+    doc.setFontSize(10);
+    doc.setTextColor(0, 0, 0);
+    doc.text(`Email: ${mainPassenger.email}`, 20, 48);
+    doc.text(`Phone: ${mainPassenger.phone}`, 20, 55);
+    doc.text(`Date: ${mainPassenger.date}`, 20, 62);
+    doc.text(`Slot: ${mainPassenger.slot.replace('_', ' ')}`, 20, 69);
+    doc.text(`Total Tickets: ${tickets.length}`, 20, 76);
+
+    // === PASSENGER TABLE HEADER ===
+    let y = 90;
+    doc.setFontSize(14);
+    doc.setTextColor(0, 128, 0);
+    doc.text('Passenger Details:', 20, y);
+
+    y += 10;
+
+    // Table Header
+    doc.setFillColor(37, 99, 235); // blue
+    doc.setTextColor(255, 255, 255); // white
+    doc.rect(20, y, 170, 10, 'F');
+    doc.text('S.No', 25, y + 7);
+    doc.text('Name', 45, y + 7);
+    doc.text('Age', 100, y + 7);
+    doc.text('Is Army', 120, y + 7);
+    doc.text('Ticket Fee', 160, y + 7);
+
+    // === TABLE BODY ===
+    let serial = 1;
+    y += 13;
+
+    const addRow = (person) => {
+      doc.setTextColor(0, 0, 0);
+      doc.setFillColor(240, 240, 240);
+      doc.rect(20, y - 5, 170, 10, 'F');
+
+      doc.text(`${serial}`, 25, y + 2);
+      doc.text(`${person.name}`, 45, y + 2);
+      doc.text(`${person.age}`, 100, y + 2);
+      doc.text(`${person.isArmy === 'true' ? 'Yes' : 'No'}`, 120, y + 2);
+      doc.text(`${calculateTicketPrice(person.age, person.isArmy === 'true')}`, 160, y + 2);
+
+      y += 12;
+      serial++;
+    };
+
+    // Add main passenger
+    addRow(mainPassenger);
+
+    // Add co-passengers
+    coPassengers.forEach(addRow);
+
+    // === TOTAL AMOUNT ===
+    y += 10;
+    doc.setDrawColor(200, 200, 200);
+    doc.line(20, y, 190, y);
+    y += 10;
+
+    doc.setFontSize(12);
+    doc.setTextColor(37, 99, 235);
+    doc.text(`Total Amount: ₹${fareDetails.total}`, 20, y);
+
+    // === FOOTER ===
+    y += 25;
+    doc.setFontSize(8);
+    doc.setTextColor(128, 128, 128);
+    doc.text('Thank you for booking with Heritage Walk Express!', 20, y);
+    doc.text('For support, contact: support@heritageexpress.com', 20, y + 8);
+
+    doc.save(`Heritage_Walk_Ticket_${mainPassenger.name.replace(/\s+/g, '_')}.pdf`);
+
+  } catch (err) {
+    console.error('PDF generation failed:', err);
+    alert('Failed to generate PDF.');
+  }
+};
+
+
   const handleClickverificationforTIcketOrder = async () => {
-    // Populate tickets array
-    const ticketsArray = [];
-    
-    // Add primary passenger as first object
-    ticketsArray.push({
-      name: mainPassenger.name,
-      age: mainPassenger.age,
-      isArmy: mainPassenger.isArmy,
-      date: mainPassenger.date,
-      slot: mainPassenger.slot,
-      phone: mainPassenger.phone,
-      email: mainPassenger.email,
-      passengerType: 'primary'
-    });
-    
-    // Add co-passengers as subsequent objects
-    coPassengers.forEach((coPassenger, index) => {
+    try {
+      // Populate tickets array
+      const ticketsArray = [];
+      
+      // Add primary passenger as first object
       ticketsArray.push({
-        name: coPassenger.name,
-        age: coPassenger.age,
-        isArmy: coPassenger.isArmy,
-        date: mainPassenger.date, // Same date as primary passenger
-        slot: mainPassenger.slot, // Same slot as primary passenger
-        phone: mainPassenger.phone, // Same phone as primary passenger
-        email: mainPassenger.email, // Same email as primary passenger
-        passengerType: 'co-passenger',
-        passengerNumber: index + 2
+        name: mainPassenger.name,
+        age: mainPassenger.age,
+        army: mainPassenger.isArmy === 'true',
+        date: mainPassenger.date,
+        slot: mainPassenger.slot,
+        phone: mainPassenger.phone,
+        email: mainPassenger.email,
+        passengerType: 'primary'
       });
-    });
-    
-    setTickets(ticketsArray);
-    console.log('Tickets array populated:', ticketsArray); // For debugging
+      
+      // Add co-passengers as subsequent objects
+      coPassengers.forEach((coPassenger, index) => {
+        ticketsArray.push({
+          name: coPassenger.name,
+          age: coPassenger.age,
+          army: coPassenger.isArmy === 'true',
+          date: mainPassenger.date, // Same date as primary passenger
+          slot: mainPassenger.slot, // Same slot as primary passenger
+          phone: mainPassenger.phone, // Same phone as primary passenger
+          email: mainPassenger.email, // Same email as primary passenger
+          passengerType: 'co-passenger',
+          passengerNumber: index + 2
+        });
+      });
+      
+      setTickets(ticketsArray);
+      console.log('Tickets array populated:', ticketsArray);
 
+      // Create order
+      const res = await axios.post(`http://localhost:8080/api/v1/payment/createorder`, {
+        tickets: ticketsArray
+      }, { withCredentials: true });
+      
+      console.log('Order created:', res.data);
 
-    
-    // You can add your backend processing logic here
-    // For example: sendTicketsToBackend(ticketsArray);
-     
-       
-       
-    const res = await axios.post(`http://localhost:8080/api/v1/payment/createorder`,{tickets:ticketsArray} , {withCredentials:true});
-    
-    console.log(res);
+      // Load Razorpay script
+      const scriptLoaded = await loadRazorpayScript();
+      
+      if (!scriptLoaded) {
+        alert('Failed to load payment gateway. Please try again.');
+        return;
+      }
 
+      // Initialize Razorpay payment
+      const { orderId, amount, currency, key } = res.data.data;
+      
+      const options = {
+        key: key, // Razorpay key from backend
+        amount: amount, // Amount in paise
+        currency: currency,
+        name: 'Heritage Walk Express',
+        description: `Train Booking - ${ticketsArray.length} Ticket${ticketsArray.length > 1 ? 's' : ''}`,
+        order_id: orderId,
+        handler: async function (response) {
+          // Payment successful - this only runs when payment is completed
+          console.log('✅ Payment successful, starting verification:', response);
+          
+          try {
+            console.log('🔄 Sending verification request to backend...');
+            
+            // Verify payment on backend
+            const verifyRes = await axios.post(`http://localhost:8080/api/v1/payment/verify`, {
+              razorpay_order_id: response.razorpay_order_id,
+              razorpay_payment_id: response.razorpay_payment_id,
+              razorpay_signature: response.razorpay_signature
+            }, { withCredentials: true });
+            
+            console.log('✅ Verification response:', verifyRes.data);
+            
+            if (verifyRes.data.success || verifyRes.status === 200) {
+              // Store payment data for confirmation page
+              setPaymentData(verifyRes.data.data || verifyRes.data);
+              
+              // Move to step 3 (confirmation page)
+              setStep(3);
+              alert('Payment successful! Your tickets have been booked.');
+            } else {
+              console.error('❌ Verification failed:', verifyRes.data);
+              alert('Payment verification failed. Please contact support with your payment ID: ' + response.razorpay_payment_id);
+            }
+          } catch (error) {
+            console.error('❌ Payment verification error:', error);
+            console.error('Error details:', error.response?.data);
+            alert('Payment verification failed. Please contact support with your payment ID: ' + response.razorpay_payment_id);
+          }
+        },
+        prefill: {
+          name: mainPassenger.name,
+          email: mainPassenger.email,
+          contact: mainPassenger.phone
+        },
+        notes: {
+          slot: mainPassenger.slot,
+          date: mainPassenger.date,
+          passengers: ticketsArray.length
+        },
+        theme: {
+          color: '#2563eb'
+        },
+        modal: {
+          ondismiss: function() {
+            console.log('❌ Payment cancelled/dismissed by user');
+            alert('Payment cancelled. You can try again anytime.');
+          }
+        }
+      };
 
+      const rzp = new window.Razorpay(options);
+      
+      rzp.on('payment.failed', function (response) {
+        console.error('❌ Payment failed:', response.error);
+        console.error('Payment failure details:', response);
+        alert(`Payment failed: ${response.error.description || 'Unknown error occurred'}`);
+      });
+      
+      rzp.open();
+      
+    } catch (error) {
+      console.error('Order creation error:', error);
+      alert('Failed to create order. Please try again.');
+    }
   };
 
   const prevStep = () => {
@@ -109,7 +334,7 @@ function BookingForm() {
     if (ageNum >= 60) return 100;
     if (ageNum >= 5 && ageNum <= 18) return 100;
     if (ageNum > 18) return 200;
-    if(ageNum<5)return 0;
+    if (ageNum < 5) return 0;
     return 100; // Default for ages < 5
   };
 
@@ -379,15 +604,20 @@ function BookingForm() {
                       <strong>Time Slot:</strong> {mainPassenger.slot.replace('_', ' ')}
                     </p>
                   </div>
+                  
+                  {/* Download Ticket Button */}
+                  <div className="mt-4">
+                    <button
+                      onClick={downloadTicket}
+                      className="bg-blue-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-blue-700 transition-colors"
+                    >
+                      Download Ticket PDF
+                    </button>
+                  </div>
                 </div>
 
                 {/* Debug: Display tickets array */}
-                <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-                  <h4 className="text-sm font-semibold text-gray-800 mb-2">Tickets Array (for backend):</h4>
-                  <pre className="text-xs text-gray-600 bg-white p-2 rounded border overflow-x-auto">
-                    {JSON.stringify(tickets, null, 2)}
-                  </pre>
-                </div>
+               
               </div>
             )}
 
@@ -419,7 +649,7 @@ function BookingForm() {
                   Next
                   <ArrowRight className="w-4 h-4" />
                 </button>
-              ) : (
+              ) : step === 2 ? (
                 <button
                   onClick={handleClickverificationforTIcketOrder}
                   disabled={!isStep2Valid}
@@ -432,7 +662,7 @@ function BookingForm() {
                   Book Tickets
                   <ArrowRight className="w-4 h-4" />
                 </button>
-              )}
+              ) : null}
             </div>
           </div>
 
@@ -565,7 +795,6 @@ function BookingForm() {
                   <span className="text-gray-600">Base Fare ({ticketCount} ticket{ticketCount > 1 ? 's' : ''})</span>
                 </div>
               
-               
                 <div className="border-t border-gray-200 pt-2 mt-2">
                   <div className="flex justify-between text-lg font-bold">
                     <span>Total Amount</span>
@@ -582,6 +811,7 @@ function BookingForm() {
                   <li>• Age 5-18: ₹100</li>
                   <li>• Age 60+: ₹100</li>
                   <li>• Age 19-59: ₹200</li>
+                  <li>• Age under 5: Free</li>
                 </ul>
               </div>
             </div>
