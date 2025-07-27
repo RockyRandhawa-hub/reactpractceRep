@@ -266,7 +266,7 @@ function BookingForm() {
       console.log('Tickets array populated:', ticketsArray);
 
       // Create order - Simulated API call (replace with your actual API endpoint)
-      const res = await axios.post(`http://royanheritage.onrender.com/api/v1/payment/createorder`, {
+      const res = await axios.post(`https://royanheritage.onrender.com/api/v1/payment/createorder`, {
         tickets: ticketsArray
       }, { withCredentials: true });
       
@@ -310,7 +310,7 @@ function BookingForm() {
             console.log('🔄 Sending verification request to backend...');
             
             // Verify payment on backend - Simulated API call
-            const verifyRes = await axios.post(`http://royanheritage.onrender.com/api/v1/payment/verify`, {
+            const verifyRes = await axios.post(`https://royanheritage.onrender.com/api/v1/payment/verify`, {
               razorpay_order_id: response.razorpay_order_id,
               razorpay_payment_id: response.razorpay_payment_id,
               razorpay_signature: response.razorpay_signature
