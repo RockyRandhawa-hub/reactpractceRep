@@ -47,7 +47,7 @@ const BookingOne = () => {
     setIsLoading(true);
     
     try {
-      const res = await axios.post(`https://royanheritage.onrender.com/api/v1/verify/GenerateOtp`, { email: email.trim() }, { withCredentials: true });
+      const res = await axios.post(`https://royanheritage.onrender.com/api/v1/verify/generateOtp`, { email: email.trim() }, { withCredentials: true });
       console.log(res);
       
       localStorage.setItem("GenerationofOtpTOken", res.data.data);
