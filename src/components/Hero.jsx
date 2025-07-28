@@ -92,7 +92,7 @@ const Hero = () => {
                 </div>
               ))}
             </div>
-
+{/* {adding commnet for test} */}
             <div className="flex justify-center mt-12">
               <button className="bg-green-600 text-white rounded-full text-lg font-bold hover:bg-black transition-colors px-8 py-2">
                 Learn More About Us
