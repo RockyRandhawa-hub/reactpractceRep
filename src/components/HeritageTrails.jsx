@@ -30,7 +30,7 @@ const HeritageTrails = () => {
             <div className='theFOurCardsDesignforTheTourComponens w-full mt-12'>
               <div className='flex flex-row justify-center items-center gap-6 flex-wrap px-4'>
                 <div className='w-[256px] h-[294px] bg-white/20 backdrop-blur-md border-2 border-white/30 rounded-3xl hover:shadow-2xl hover:bg-white/30 transition-all duration-300 shadow-xl hover:shadow-black/60 overflow-hidden relative group hover:scale-105'> 
-                  <img src={Logo} alt="" className='w-full h-full object-cover group-hover:scale-110 transition-transform duration-300' />
+                  <img src={""} alt="" className='w-full h-full object-cover group-hover:scale-110 transition-transform duration-300' />
                   <div className='absolute inset-0 bg-gradient-to-t from-black/70 to-transparent'></div>
                   <div className='absolute bottom-4 left-4 text-white'>
                     <h3 className='font-bold text-xl drop-shadow-lg'>Ancient Temples</h3>

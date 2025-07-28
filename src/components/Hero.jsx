@@ -5,6 +5,7 @@ import Logo from '../assets/icons/Logo.png';
 import HeritageTrails from './HeritageTrails';
 
 const Hero = () => {
+  const arr = [heroImageL, heroImageL,heroImageL,heroImageL]
   return (
     <>
       {/* WRAPPER: Unifying background for smooth transitions */}
@@ -52,12 +53,12 @@ const Hero = () => {
             {/* Attraction Images */}
            <div className="flex flex-wrap md:flex-nowrap justify-center gap-14">
 
-              {[1, 2, 3, 4].map((_, idx) => (
+              {arr.map((img, idx) => (
                 <div
                   key={idx}
                   className="w-full sm:w-[392px] h-[313px] rounded-lg overflow-hidden shadow-lg hover:shadow-2xl transition-shadow duration-300"
                 >
-                  <img src={heroImageL} alt={`Attraction ${idx + 1}`} className="w-full h-full object-cover brightness-90" />
+                  <img src={img} alt={`Attraction ${idx + 1}`} className="w-full h-full object-cover brightness-90" />
                 </div>
               ))}
             </div>
